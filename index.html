@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pig Game - Roll the Dice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #c0392b 0%, #8e44ad 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .game-board {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            display: flex;
+            position: relative;
+            min-height: 600px;
+        }
+
+        .player {
+            flex: 1;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .player-1 {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .player-2 {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .player.active {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .player-name {
+            font-size: 32px;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #333;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .player.active .player-name::after {
+            content: '●';
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #e74c3c;
+            font-size: 24px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .score {
+            font-size: 80px;
+            font-weight: 100;
+            color: #e74c3c;
+            margin-bottom: auto;
+        }
+
+        .current-box {
+            background: #e74c3c;
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            min-width: 150px;
+        }
+
+        .current-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .current-score {
+            font-size: 36px;
+            font-weight: 300;
+        }
+
+        .controls {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            background: white;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-new {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .dice {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 15px;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .dot {
+            background: #e74c3c;
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+
+        .dot.show {
+            opacity: 1;
+        }
+
+        /* Dice face configurations */
+        .face-1 .dot:nth-child(5) { opacity: 1; }
+        
+        .face-2 .dot:nth-child(1),
+        .face-2 .dot:nth-child(9) { opacity: 1; }
+        
+        .face-3 .dot:nth-child(1),
+        .face-3 .dot:nth-child(5),
+        .face-3 .dot:nth-child(9) { opacity: 1; }
+        
+        .face-4 .dot:nth-child(1),
+        .face-4 .dot:nth-child(3),
+        .face-4 .dot:nth-child(7),
+        .face-4 .dot:nth-child(9) { opacity: 1; }
+        
+        .face-5 .dot:nth-child(1),
+        .face-5 .dot:nth-child(3),
+        .face-5 .dot:nth-child(5),
+        .face-5 .dot:nth-child(7),
+        .face-5 .dot:nth-child(9) { opacity: 1; }
+        
+        .face-6 .dot:nth-child(1),
+        .face-6 .dot:nth-child(3),
+        .face-6 .dot:nth-child(4),
+        .face-6 .dot:nth-child(6),
+        .face-6 .dot:nth-child(7),
+        .face-6 .dot:nth-child(9) { opacity: 1; }
+
+        .history-panel {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            color: white;
+        }
+
+        .history-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 15px;
+        }
+
+        .history-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.1);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .history-player {
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .history-roll {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mini-die {
+            width: 30px;
+            height: 30px;
+            background: white;
+            border-radius: 5px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 4px;
+            gap: 2px;
+        }
+
+        .mini-dot {
+            background: #e74c3c;
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+
+        .mini-die.face-1 .mini-dot:nth-child(5) { opacity: 1; }
+        .mini-die.face-2 .mini-dot:nth-child(1),
+        .mini-die.face-2 .mini-dot:nth-child(9) { opacity: 1; }
+        .mini-die.face-3 .mini-dot:nth-child(1),
+        .mini-die.face-3 .mini-dot:nth-child(5),
+        .mini-die.face-3 .mini-dot:nth-child(9) { opacity: 1; }
+        .mini-die.face-4 .mini-dot:nth-child(1),
+        .mini-die.face-4 .mini-dot:nth-child(3),
+        .mini-die.face-4 .mini-dot:nth-child(7),
+        .mini-die.face-4 .mini-dot:nth-child(9) { opacity: 1; }
+        .mini-die.face-5 .mini-dot:nth-child(1),
+        .mini-die.face-5 .mini-dot:nth-child(3),
+        .mini-die.face-5 .mini-dot:nth-child(5),
+        .mini-die.face-5 .mini-dot:nth-child(7),
+        .mini-die.face-5 .mini-dot:nth-child(9) { opacity: 1; }
+        .mini-die.face-6 .mini-dot:nth-child(1),
+        .mini-die.face-6 .mini-dot:nth-child(3),
+        .mini-die.face-6 .mini-dot:nth-child(4),
+        .mini-die.face-6 .mini-dot:nth-child(6),
+        .mini-die.face-6 .mini-dot:nth-child(7),
+        .mini-die.face-6 .mini-dot:nth-child(9) { opacity: 1; }
+
+        .history-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .winner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(231, 76, 60, 0.95);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            font-size: 36px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .winner.show {
+            display: block;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+            .history-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-board">
+            <button class="btn btn-new" onclick="initGame()">
+                <span>🔄</span> New Game
+            </button>
+
+            <div class="player player-1 active" id="player-0">
+                <div class="player-name">Player 1</div>
+                <div class="score" id="score-0">0</div>
+                <div class="current-box">
+                    <div class="current-label">Current</div>
+                    <div class="current-score" id="current-0">0</div>
+                </div>
+            </div>
+
+            <div class="player player-2" id="player-1">
+                <div class="player-name">Player 2</div>
+                <div class="score" id="score-1">0</div>
+                <div class="current-box">
+                    <div class="current-label">Current</div>
+                    <div class="current-score" id="current-1">0</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="dice face-1" id="dice">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                
+                <button class="btn" onclick="rollDice()" id="rollBtn">
+                    <span>🎲</span> Roll Dice
+                </button>
+                
+                <button class="btn" onclick="holdScore()" id="holdBtn">
+                    <span>📥</span> Hold
+                </button>
+            </div>
+
+            <div class="winner" id="winner">
+                <div id="winnerText">Player 1 Wins!</div>
+                <button class="btn" onclick="initGame()" style="margin-top: 20px;">Play Again</button>
+            </div>
+        </div>
+
+        <div class="history-panel">
+            <div class="history-title">🎲 Roll History</div>
+            <div class="history-list" id="historyList">
+                <!-- History items will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scores, currentScore, activePlayer, playing;
+        const winningScore = 100;
+
+        function initGame() {
+            scores = [0, 0];
+            currentScore = 0;
+            activePlayer = 0;
+            playing = true;
+            
+            document.getElementById('score-0').textContent = '0';
+            document.getElementById('score-1').textContent = '0';
+            document.getElementById('current-0').textContent = '0';
+            document.getElementById('current-1').textContent = '0';
+            
+            document.getElementById('player-0').classList.add('active');
+            document.getElementById('player-1').classList.remove('active');
+            
+            document.getElementById('winner').classList.remove('show');
+            document.getElementById('rollBtn').disabled = false;
+            document.getElementById('holdBtn').disabled = false;
+            
+            // Clear history
+            document.getElementById('historyList').innerHTML = '';
+            
+            // Reset dice
+            updateDice(1);
+        }
+
+        function updateDice(number) {
+            const dice = document.getElementById('dice');
+            dice.className = 'dice face-' + number;
+        }
+
+        function rollDice() {
+            if (!playing) return;
+
+            // Generate random number
+            const dice = Math.floor(Math.random() * 6) + 1;
+            
+            // Animate dice roll
+            let rolls = 0;
+            const interval = setInterval(() => {
+                updateDice(Math.floor(Math.random() * 6) + 1);
+                rolls++;
+                if (rolls > 5) {
+                    clearInterval(interval);
+                    updateDice(dice);
+                    processRoll(dice);
+                }
+            }, 100);
+        }
+
+        function processRoll(dice) {
+            // Add to history
+            addToHistory(dice);
+
+            if (dice !== 1) {
+                // Add to current score
+                currentScore += dice;
+                document.getElementById(`current-${activePlayer}`).textContent = currentScore;
+            } else {
+                // Switch player (lose current score)
+                switchPlayer();
+            }
+        }
+
+        function addToHistory(dice) {
+            const historyList = document.getElementById('historyList');
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            
+            const miniDots = Array(9).fill('<div class="mini-dot"></div>').join('');
+            
+            item.innerHTML = `
+                <div class="history-player">Player ${activePlayer + 1}</div>
+                <div class="history-roll">
+                    <div class="mini-die face-${dice}">
+                        ${miniDots}
+                    </div>
+                    <span class="history-value">${dice}</span>
+                </div>
+            `;
+            
+            historyList.insertBefore(item, historyList.firstChild);
+        }
+
+        function holdScore() {
+            if (!playing) return;
+
+            // Add current score to total
+            scores[activePlayer] += currentScore;
+            document.getElementById(`score-${activePlayer}`).textContent = scores[activePlayer];
+
+            // Check for winner
+            if (scores[activePlayer] >= winningScore) {
+                document.getElementById('winnerText').textContent = `Player ${activePlayer + 1} Wins! 🎉`;
+                document.getElementById('winner').classList.add('show');
+                playing = false;
+                document.getElementById('rollBtn').disabled = true;
+                document.getElementById('holdBtn').disabled = true;
+            } else {
+                switchPlayer();
+            }
+        }
+
+        function switchPlayer() {
+            currentScore = 0;
+            document.getElementById(`current-${activePlayer}`).textContent = '0';
+            
+            activePlayer = activePlayer === 0 ? 1 : 0;
+            
+            document.getElementById('player-0').classList.toggle('active');
+            document.getElementById('player-1').classList.toggle('active');
+        }
+
+        // Initialize game on load
+        initGame();
+    </script>
+</body>
+</html>
